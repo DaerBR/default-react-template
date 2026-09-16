@@ -2,7 +2,11 @@ import { Link } from 'react-router';
 
 import { useAppTheme } from '../../styles/hooks.ts';
 
-export const NotFound = () => {
+interface ErrorProps {
+	errorCode: number;
+}
+
+export const Error = ({errorCode}: ErrorProps) => {
 	const theme = useAppTheme();
 
 	return (
@@ -13,14 +17,13 @@ export const NotFound = () => {
 				alignItems: 'center',
 				justifyContent: 'center',
 				minHeight: '100vh',
-				gap: theme.margins[4],
+				gap: '24px',
 				textAlign: 'center',
 			}}
 		>
-			<h1 css={{ ...theme.typography.h1, color: theme.colors.error.main, margin: 0 }}>404</h1>
-			<p css={{ ...theme.typography.paragraphM, color: theme.colors.text.subtitle, margin: 0 }}>Page not found.</p>
+			<h1 css={{ ...theme.typography.h1, color: theme.colors.error.main, margin: 0 }}>{`Error ${errorCode}`}</h1>
 			<Link to="/" css={{ color: theme.colors.primary.main }}>
-				Back to home
+				Back to Homepage
 			</Link>
 		</div>
 	);
