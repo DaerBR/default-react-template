@@ -10,8 +10,8 @@ export const App = () => (
 		<ThemeProvider theme={theme}>
 			<Routes>
 				<Route path="/" element={<Homepage />} />
-				<Route path="/not-found" element={<Error errorCode={404}/>} />
-				<Route path="*" element={<Error errorCode={404}/>} />
+				<Route path="/not-found" element={<Error errorCode={404} />} />
+				<Route path="*" element={<Error errorCode={404} />} />
 			</Routes>
 		</ThemeProvider>
 	</BrowserRouter>

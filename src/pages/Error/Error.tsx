@@ -6,7 +6,7 @@ interface ErrorProps {
 	errorCode: number;
 }
 
-export const Error = ({errorCode}: ErrorProps) => {
+export const Error = ({ errorCode }: ErrorProps) => {
 	const theme = useAppTheme();
 
 	return (
