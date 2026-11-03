@@ -1,23 +1,13 @@
 import { useNavigate } from 'react-router';
 import { useCallback, useContext, useState } from 'react';
 import { toast } from 'sonner';
+import type { AsyncThunk, AsyncThunkAction } from '@reduxjs/toolkit';
 
-import { ThunkAppDispatch, useAppDispatch } from './hooks';
-import { RootState } from '../store.ts';
+import { useAppDispatch } from './hooks';
+import { toApiError } from '../../api/apiError.ts';
+import type { ApiError } from '../../api/apiError.ts';
+import type { AppThunkConfig } from '../createAppAsyncThunk.ts';
 import { GlobalLoadingIndicatorContext } from '../../contexts/GlobalLoadingIndicator.tsx';
-
-interface ServerErrorResponse {
-	data: {
-		messages?: string[];
-	};
-}
-
-interface ServerError {
-	error?: string;
-	message?: string;
-	status?: string;
-	statusText?: string;
-}
 
 interface UseThunkOptions {
 	successMessage?: string;
@@ -25,31 +15,19 @@ interface UseThunkOptions {
 	useGlobalLoader?: boolean;
 }
 
-const getErrorText = (error: ServerError) => {
-	if (typeof error !== 'object') {
-		return 'Unknown error occurred.';
-	}
+// RTK types a thunk's call signature with conditional types (different shapes for void / optional / required
+// args). Inside this generic hook `TArg` is unresolved, so TS can't pick a shape and rejects `thunk(arg)`.
+// Callers are still fully checked via the `AsyncThunk<TReturned, TArg, …>` parameter; this cast is local only.
+type AppThunkActionCreator<TReturned, TArg> = (arg: TArg) => AsyncThunkAction<TReturned, TArg, AppThunkConfig>;
 
-	if (error.message) {
-		return error.message;
-	}
+// Discriminated union on `ok`: checking `result.ok` narrows to the branch that has `data` (success) or `error`.
+export type ThunkResult<TReturned> = { data: TReturned; ok: true } | { error: ApiError; ok: false };
 
-	if ('status' in error && error.status && error.statusText) {
-		return `Server rejected with error status ${error.status} - ${error.statusText}`;
-	}
-
-	if ('message' in error && error.message === 'Rejected') {
-		return 'Unauthorized access - request was rejected';
-	}
-
-	return 'Unknown error occurred.';
-};
-
-export const useThunk = <TThunkArgs>(
-	thunk: (args: TThunkArgs) => (dispatch: ThunkAppDispatch, getState: () => RootState, extra: unknown) => any,
-	options: UseThunkOptions | undefined = undefined,
-): [(args?: TThunkArgs) => Promise<void>, ServerErrorResponse | ServerError | null] => {
-	const [error, setError] = useState<ServerError | ServerErrorResponse | null>(null);
+export const useThunk = <TReturned, TArg>(
+	thunk: AsyncThunk<TReturned, TArg, AppThunkConfig>,
+	options?: UseThunkOptions,
+): [(arg: TArg) => Promise<ThunkResult<TReturned>>, ApiError | null] => {
+	const [error, setError] = useState<ApiError | null>(null);
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 
@@ -61,13 +39,13 @@ export const useThunk = <TThunkArgs>(
 	const { handleShowLoadingIndicator } = useContext(GlobalLoadingIndicatorContext);
 
 	const dispatchThunk = useCallback(
-		async (args?: TThunkArgs) => {
+		async (arg: TArg): Promise<ThunkResult<TReturned>> => {
 			if (useGlobalLoader) {
 				handleShowLoadingIndicator(true);
 			}
 
 			try {
-				await dispatch(thunk(args as TThunkArgs)).unwrap();
+				const data = await dispatch((thunk as AppThunkActionCreator<TReturned, TArg>)(arg)).unwrap();
 
 				if (successMessage) {
 					toast.success(successMessage);
@@ -76,11 +54,15 @@ export const useThunk = <TThunkArgs>(
 				if (successRedirectRoute) {
 					navigate(successRedirectRoute);
 				}
-			} catch (e) {
-				const errorText = getErrorText(e as ServerError);
 
-				toast.error(errorText);
-				setError(e as ServerError);
+				return { data, ok: true };
+			} catch (e) {
+				const apiError = toApiError(e);
+
+				toast.error(apiError.message);
+				setError(apiError);
+
+				return { error: apiError, ok: false };
 			} finally {
 				if (useGlobalLoader) {
 					handleShowLoadingIndicator(false);

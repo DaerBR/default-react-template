@@ -101,6 +101,10 @@ export default [
 			'@typescript-eslint/adjacent-overload-signatures': 'error',
 			'@typescript-eslint/array-type': ['error', { default: 'array-simple' }],
 			'@typescript-eslint/consistent-type-assertions': 'error',
+			'@typescript-eslint/consistent-type-imports': [
+				'error',
+				{ prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+			],
 			'@typescript-eslint/member-ordering': [
 				'error',
 				{
@@ -308,6 +312,7 @@ export default [
 			'valid-typeof': 'error',
 
 			// Import rules
+			'import/consistent-type-specifier-style': ['error', 'prefer-top-level'],
 			'import/default': 'error',
 			'import/export': 'error',
 			'import/first': ['error', 'absolute-first'],

@@ -1,6 +1,7 @@
 import { create } from 'axios';
 import { useEffect } from 'react';
-import { NavigateFunction, useNavigate } from 'react-router';
+import type { NavigateFunction } from 'react-router';
+import { useNavigate } from 'react-router';
 import { API_URL } from './constants';
 
 export const apiRequest = create({
@@ -26,7 +27,7 @@ apiRequest.interceptors.response.use(
 		}
 
 		if (status === 404) {
-			currentNavigate?.('/error');
+			currentNavigate?.('/not-found');
 		}
 
 		return Promise.reject(error);
